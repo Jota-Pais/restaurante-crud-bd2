@@ -1,17 +1,29 @@
 import { useState } from "react";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, NavGroup } from "./components/Sidebar";
 import { EntityManager } from "./components/EntityManager";
 import { PedidosView } from "./components/PedidosView";
+import { FeedbackHost } from "./components/feedback";
 import { entities } from "./entities";
 
-const NAV = [
-  { key: "pedidos", label: "Pedidos" },
-  { key: "produtos", label: "Produtos" },
-  { key: "categorias", label: "Categorias" },
-  { key: "mesas", label: "Mesas" },
-  { key: "funcionarios", label: "Funcionários" },
-  { key: "clientes", label: "Clientes" },
-  { key: "pagamentos", label: "Pagamentos" },
+// Menu agrupado: separa o dia a dia (Operação) dos cadastros de apoio.
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: "Operação",
+    items: [
+      { key: "pedidos", label: "Pedidos", icon: "🧾" },
+      { key: "pagamentos", label: "Pagamentos", icon: "💳" },
+    ],
+  },
+  {
+    title: "Cadastros",
+    items: [
+      { key: "produtos", label: "Produtos", icon: "🍽️" },
+      { key: "categorias", label: "Categorias", icon: "🏷️" },
+      { key: "mesas", label: "Mesas", icon: "🪑" },
+      { key: "funcionarios", label: "Funcionários", icon: "🧑‍🍳" },
+      { key: "clientes", label: "Clientes", icon: "👥" },
+    ],
+  },
 ];
 
 export default function App() {
@@ -19,7 +31,7 @@ export default function App() {
 
   return (
     <div className="layout">
-      <Sidebar items={NAV} active={active} onSelect={setActive} />
+      <Sidebar groups={NAV_GROUPS} active={active} onSelect={setActive} />
       <main className="content">
         {active === "pedidos" ? (
           <PedidosView />
@@ -27,6 +39,7 @@ export default function App() {
           <EntityManager key={active} config={entities[active]} />
         )}
       </main>
+      <FeedbackHost />
     </div>
   );
 }

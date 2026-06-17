@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../api";
 import { Modal } from "./Modal";
+import { toast, confirmar } from "./feedback";
 
 type Row = Record<string, any>;
 interface ItemForm {
@@ -12,6 +13,7 @@ export function PedidosView() {
   const [pedidos, setPedidos] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const [mesas, setMesas] = useState<Row[]>([]);
   const [funcionarios, setFuncionarios] = useState<Row[]>([]);
@@ -56,6 +58,19 @@ export function PedidosView() {
     load();
   }, [load]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return pedidos;
+    return pedidos.filter(
+      (p) =>
+        String(p.id).includes(q) ||
+        `mesa ${p.mesa_numero}`.toLowerCase().includes(q) ||
+        String(p.funcionario_nome ?? "").toLowerCase().includes(q) ||
+        String(p.cliente_nome ?? "").toLowerCase().includes(q) ||
+        String(p.status ?? "").toLowerCase().includes(q)
+    );
+  }, [pedidos, search]);
+
   function openCreate() {
     setIdMesa("");
     setIdFuncionario("");
@@ -77,6 +92,9 @@ export function PedidosView() {
     setItens((arr) => arr.filter((_, i) => i !== index));
   }
 
+  const itensValidos = itens.filter((it) => it.id_produto !== "");
+  const podeSalvar = idMesa !== "" && idFuncionario !== "" && itensValidos.length > 0;
+
   const total = itens.reduce((sum, it) => {
     const prod = produtos.find((p) => p.id === it.id_produto);
     return sum + (prod ? Number(prod.preco) * it.quantidade : 0);
@@ -90,18 +108,17 @@ export function PedidosView() {
         id_mesa: idMesa,
         id_funcionario: idFuncionario,
         id_cliente: idCliente || null,
-        itens: itens
-          .filter((it) => it.id_produto !== "")
-          .map((it) => {
-            const prod = produtos.find((p) => p.id === it.id_produto)!;
-            return {
-              id_produto: it.id_produto,
-              quantidade: it.quantidade,
-              preco_unitario: Number(prod.preco),
-            };
-          }),
+        itens: itensValidos.map((it) => {
+          const prod = produtos.find((p) => p.id === it.id_produto)!;
+          return {
+            id_produto: it.id_produto,
+            quantidade: it.quantidade,
+            preco_unitario: Number(prod.preco),
+          };
+        }),
       };
       await api.create("pedidos", payload);
+      toast.success("Pedido criado com sucesso.");
       setModalOpen(false);
       await load();
     } catch (e) {
@@ -111,22 +128,40 @@ export function PedidosView() {
     }
   }
 
-  async function changeStatus(pedido: Row, status: string) {
+  async function changeStatus(pedido: Row, status: string, successMsg: string) {
     try {
       await api.update("pedidos", pedido.id, { status });
+      toast.success(successMsg);
       await load();
     } catch (e) {
-      alert((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
+  async function cancelar(pedido: Row) {
+    const ok = await confirmar({
+      title: `Cancelar o pedido #${pedido.id}?`,
+      message: "O pedido ficará marcado como Cancelado.",
+      confirmLabel: "Cancelar pedido",
+      danger: true,
+    });
+    if (ok) changeStatus(pedido, "Cancelado", `Pedido #${pedido.id} cancelado.`);
+  }
+
   async function handleDelete(pedido: Row) {
-    if (!confirm(`Excluir o pedido #${pedido.id} e seus itens?`)) return;
+    const ok = await confirmar({
+      title: `Excluir o pedido #${pedido.id}?`,
+      message: "Os itens do pedido serão removidos junto. Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.remove("pedidos", pedido.id);
+      toast.success(`Pedido #${pedido.id} excluído.`);
       await load();
     } catch (e) {
-      alert((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
@@ -134,16 +169,25 @@ export function PedidosView() {
     try {
       setDetail(await api.get<Row>("pedidos", pedido.id));
     } catch (e) {
-      alert((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
+
+  // Nomes pro modal de detalhe (a rota de detalhe traz só os ids).
+  const detailMesa = detail && mesas.find((m) => m.id === detail.id_mesa);
+  const detailFunc = detail && funcionarios.find((f) => f.id === detail.id_funcionario);
+  const detailCli = detail && clientes.find((c) => c.id === detail.id_cliente);
 
   return (
     <div className="page">
       <header className="page-header">
         <div>
           <h1>Pedidos</h1>
-          <p className="muted">{pedidos.length} pedido(s)</p>
+          <p className="muted">
+            {search.trim()
+              ? `${filtered.length} de ${pedidos.length} pedido(s)`
+              : `${pedidos.length} pedido(s)`}
+          </p>
         </div>
         <button className="btn-primary" onClick={openCreate}>
           + Novo pedido
@@ -152,10 +196,33 @@ export function PedidosView() {
 
       {error && <div className="alert">{error}</div>}
 
+      {!loading && pedidos.length > 0 && (
+        <div className="toolbar">
+          <div className="search">
+            <span className="search-icon" aria-hidden="true">
+              🔎
+            </span>
+            <input
+              type="text"
+              placeholder="Buscar por mesa, garçom, cliente ou status…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch("")} aria-label="Limpar busca">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="muted">Carregando…</p>
       ) : pedidos.length === 0 ? (
-        <div className="empty">Nenhum pedido aberto. Crie o primeiro pedido.</div>
+        <div className="empty">Nenhum pedido ainda. Crie o primeiro pedido.</div>
+      ) : filtered.length === 0 ? (
+        <div className="empty">Nenhum resultado para “{search}”.</div>
       ) : (
         <div className="table-wrap">
           <table>
@@ -171,7 +238,7 @@ export function PedidosView() {
               </tr>
             </thead>
             <tbody>
-              {pedidos.map((p) => (
+              {filtered.map((p) => (
                 <tr key={p.id}>
                   <td className="col-id mono">{p.id}</td>
                   <td>Mesa {p.mesa_numero}</td>
@@ -186,9 +253,17 @@ export function PedidosView() {
                       Ver itens
                     </button>
                     {p.status === "Aberto" && (
-                      <button className="link" onClick={() => changeStatus(p, "Fechado")}>
-                        Fechar
-                      </button>
+                      <>
+                        <button
+                          className="link"
+                          onClick={() => changeStatus(p, "Fechado", `Pedido #${p.id} fechado.`)}
+                        >
+                          Fechar
+                        </button>
+                        <button className="link" onClick={() => cancelar(p)}>
+                          Cancelar
+                        </button>
+                      </>
                     )}
                     <button className="link danger" onClick={() => handleDelete(p)}>
                       Excluir
@@ -301,10 +376,13 @@ export function PedidosView() {
             <button className="btn-ghost" onClick={() => setModalOpen(false)}>
               Cancelar
             </button>
-            <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            <button className="btn-primary" onClick={handleSave} disabled={saving || !podeSalvar}>
               {saving ? "Salvando…" : "Salvar pedido"}
             </button>
           </div>
+          {!podeSalvar && (
+            <p className="form-hint">Selecione mesa, garçom e ao menos um produto para salvar.</p>
+          )}
         </Modal>
       )}
 
@@ -313,8 +391,28 @@ export function PedidosView() {
         <Modal title={`Pedido #${detail.id}`} onClose={() => setDetail(null)}>
           <div className="detail-grid">
             <div>
+              <span className="muted">Mesa</span>
+              <p>{detailMesa ? `Mesa ${detailMesa.numero}` : "—"}</p>
+            </div>
+            <div>
+              <span className="muted">Garçom</span>
+              <p>{detailFunc ? detailFunc.nome : "—"}</p>
+            </div>
+            <div>
+              <span className="muted">Cliente</span>
+              <p>{detailCli ? detailCli.nome : "—"}</p>
+            </div>
+            <div>
+              <span className="muted">Data</span>
+              <p>{formatDate(detail.data_hora)}</p>
+            </div>
+            <div>
               <span className="muted">Status</span>
-              <p>{detail.status}</p>
+              <p>
+                <span className={`badge badge-${String(detail.status).toLowerCase()}`}>
+                  {detail.status}
+                </span>
+              </p>
             </div>
             <div>
               <span className="muted">Total</span>
@@ -351,4 +449,11 @@ function formatMoney(value: any): string {
   const n = Number(value);
   if (Number.isNaN(n)) return "—";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatDate(value: any): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }

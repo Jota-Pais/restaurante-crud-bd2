@@ -15,6 +15,8 @@ export interface FieldConfig {
   fromEntity?: { entity: string; labelKey: string };
   // Não aparece no formulário (ex.: id, campos calculados)
   readOnly?: boolean;
+  // Exibe o valor como um "badge" colorido na listagem (ex.: status da mesa).
+  display?: "badge";
 }
 
 export interface EntityConfig {
@@ -47,7 +49,7 @@ export const entities: Record<string, EntityConfig> = {
         required: true,
         fromEntity: { entity: "categorias", labelKey: "nome" },
       },
-      { name: "ativo", label: "Ativo", type: "checkbox" },
+      { name: "ativo", label: "Ativo", type: "checkbox", display: "badge" },
     ],
   },
 
@@ -62,6 +64,7 @@ export const entities: Record<string, EntityConfig> = {
         name: "status",
         label: "Status",
         type: "select",
+        display: "badge",
         options: [
           { value: "Livre", label: "Livre" },
           { value: "Ocupada", label: "Ocupada" },

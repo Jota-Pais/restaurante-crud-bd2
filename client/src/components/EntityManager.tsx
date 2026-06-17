@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import { api } from "../api";
 import { EntityConfig, FieldConfig } from "../entities";
 import { Modal } from "./Modal";
+import { toast, confirmar } from "./feedback";
 
 type Row = Record<string, any>;
 
@@ -13,6 +14,7 @@ export function EntityManager({ config }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [form, setForm] = useState<Row>({});
@@ -53,6 +55,34 @@ export function EntityManager({ config }: Props) {
     loadFkOptions();
   }, [load, loadFkOptions]);
 
+  // Texto pesquisável de uma célula (resolve FK e opções pro valor legível).
+  const cellText = useCallback(
+    (field: FieldConfig, row: Row): string => {
+      const value = row[field.name];
+      if (field.type === "checkbox") return value ? "sim ativo" : "não inativo";
+      if (field.type === "money") return formatMoney(value);
+      if (field.fromEntity) {
+        const opt = (fkOptions[field.name] || []).find((o) => o.id === value);
+        return opt ? String(opt[field.fromEntity.labelKey]) : String(value ?? "");
+      }
+      if (field.options) {
+        return field.options.find((o) => o.value === value)?.label ?? String(value ?? "");
+      }
+      return String(value ?? "");
+    },
+    [fkOptions]
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (row) =>
+        String(row.id).includes(q) ||
+        config.fields.some((f) => cellText(f, row).toLowerCase().includes(q))
+    );
+  }, [rows, search, config.fields, cellText]);
+
   function openCreate() {
     const initial: Row = {};
     config.fields.forEach((f) => {
@@ -77,8 +107,10 @@ export function EntityManager({ config }: Props) {
     try {
       if (editing) {
         await api.update(config.key, editing.id, form);
+        toast.success(`${config.singular} atualizado com sucesso.`);
       } else {
         await api.create(config.key, form);
+        toast.success(`${config.singular} criado com sucesso.`);
       }
       setModalOpen(false);
       await load();
@@ -90,17 +122,31 @@ export function EntityManager({ config }: Props) {
   }
 
   async function handleDelete(row: Row) {
-    if (!confirm(`Excluir ${config.singular.toLowerCase()} #${row.id}?`)) return;
+    const ok = await confirmar({
+      title: `Excluir ${config.singular.toLowerCase()} #${row.id}?`,
+      message: "Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.remove(config.key, row.id);
+      toast.success(`${config.singular} excluído.`);
       await load();
     } catch (e) {
-      alert((e as Error).message);
+      toast.error((e as Error).message);
     }
   }
 
-  function renderCell(field: FieldConfig, row: Row) {
+  function renderCell(field: FieldConfig, row: Row): ReactNode {
     const value = row[field.name];
+    if (field.display === "badge") {
+      if (field.type === "checkbox") {
+        return <span className={`badge ${value ? "badge-on" : "badge-off"}`}>{value ? "Sim" : "Não"}</span>;
+      }
+      const label = field.options?.find((o) => o.value === value)?.label ?? String(value ?? "—");
+      return <span className={`badge badge-${slug(String(value))}`}>{label}</span>;
+    }
     if (field.type === "checkbox") return value ? "Sim" : "Não";
     if (field.type === "money") return formatMoney(value);
     if (field.fromEntity) {
@@ -115,7 +161,11 @@ export function EntityManager({ config }: Props) {
       <header className="page-header">
         <div>
           <h1>{config.plural}</h1>
-          <p className="muted">{rows.length} registro(s)</p>
+          <p className="muted">
+            {search.trim()
+              ? `${filtered.length} de ${rows.length} registro(s)`
+              : `${rows.length} registro(s)`}
+          </p>
         </div>
         <button className="btn-primary" onClick={openCreate}>
           + Novo {config.singular.toLowerCase()}
@@ -124,12 +174,35 @@ export function EntityManager({ config }: Props) {
 
       {error && <div className="alert">{error}</div>}
 
+      {!loading && rows.length > 0 && (
+        <div className="toolbar">
+          <div className="search">
+            <span className="search-icon" aria-hidden="true">
+              🔎
+            </span>
+            <input
+              type="text"
+              placeholder={`Buscar ${config.plural.toLowerCase()}…`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch("")} aria-label="Limpar busca">
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <p className="muted">Carregando…</p>
       ) : rows.length === 0 ? (
         <div className="empty">
           Nenhum registro ainda. Clique em “+ Novo {config.singular.toLowerCase()}” para começar.
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty">Nenhum resultado para “{search}”.</div>
       ) : (
         <div className="table-wrap">
           <table>
@@ -143,7 +216,7 @@ export function EntityManager({ config }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {filtered.map((row) => (
                 <tr key={row.id}>
                   <td className="col-id mono">{row.id}</td>
                   {config.fields.map((f) => (
@@ -275,4 +348,9 @@ function formatMoney(value: any): string {
   const n = Number(value);
   if (Number.isNaN(n)) return "—";
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// "Manutenção" -> "manutencao" (pra virar classe de badge: badge-manutencao)
+function slug(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }

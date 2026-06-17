@@ -31,6 +31,11 @@ export function PedidosView() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Form de "registrar pagamento" dentro do modal de detalhe
+  const [pgMetodo, setPgMetodo] = useState("PIX");
+  const [pgValor, setPgValor] = useState<number | "">("");
+  const [pgSaving, setPgSaving] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -167,9 +172,39 @@ export function PedidosView() {
 
   async function openDetail(pedido: Row) {
     try {
-      setDetail(await api.get<Row>("pedidos", pedido.id));
+      const d = await api.get<Row>("pedidos", pedido.id);
+      setDetail(d);
+      // Sugere o valor do pagamento já com o saldo que falta.
+      setPgMetodo("PIX");
+      setPgValor(restante(d) > 0 ? restante(d) : "");
     } catch (e) {
       toast.error((e as Error).message);
+    }
+  }
+
+  async function registrarPagamento() {
+    if (!detail) return;
+    if (pgValor === "" || Number(pgValor) <= 0) {
+      toast.error("Informe um valor maior que zero.");
+      return;
+    }
+    setPgSaving(true);
+    try {
+      await api.create("pagamentos", {
+        id_pedido: detail.id,
+        metodo_pagamento: pgMetodo,
+        valor: pgValor,
+      });
+      toast.success("Pagamento registrado.");
+      // Recarrega o detalhe (lista de pagamentos + saldo) e a lista (badge de situação).
+      const d = await api.get<Row>("pedidos", detail.id);
+      setDetail(d);
+      setPgValor(restante(d) > 0 ? restante(d) : "");
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPgSaving(false);
     }
   }
 
@@ -177,6 +212,8 @@ export function PedidosView() {
   const detailMesa = detail && mesas.find((m) => m.id === detail.id_mesa);
   const detailFunc = detail && funcionarios.find((f) => f.id === detail.id_funcionario);
   const detailCli = detail && clientes.find((c) => c.id === detail.id_cliente);
+  const detailPago = detail ? pago(detail) : 0;
+  const detailSaldo = detail ? Math.max(0, Number(detail.total) - detailPago) : 0;
 
   return (
     <div className="page">
@@ -234,11 +271,14 @@ export function PedidosView() {
                 <th>Cliente</th>
                 <th>Status</th>
                 <th>Total</th>
+                <th>Pagamento</th>
                 <th className="col-actions">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {filtered.map((p) => {
+                const pg = pagamentoSituacao(p);
+                return (
                 <tr key={p.id}>
                   <td className="col-id mono">{p.id}</td>
                   <td>Mesa {p.mesa_numero}</td>
@@ -248,6 +288,9 @@ export function PedidosView() {
                     <span className={`badge badge-${p.status.toLowerCase()}`}>{p.status}</span>
                   </td>
                   <td className="mono">{formatMoney(p.total)}</td>
+                  <td>
+                    <span className={`badge ${pg.cls}`}>{pg.label}</span>
+                  </td>
                   <td className="col-actions">
                     <button className="link" onClick={() => openDetail(p)}>
                       Ver itens
@@ -270,7 +313,8 @@ export function PedidosView() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -439,10 +483,92 @@ export function PedidosView() {
               ))}
             </tbody>
           </table>
+
+          {/* Pagamentos do pedido — relação pedido 1──< pagamentos */}
+          <div className="itens-section">
+            <div className="itens-header">
+              <h3>Pagamentos</h3>
+            </div>
+
+            {(detail.pagamentos || []).length === 0 ? (
+              <p className="muted detail-empty">Nenhum pagamento registrado ainda.</p>
+            ) : (
+              <table className="inner-table">
+                <thead>
+                  <tr>
+                    <th>Método</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.pagamentos.map((pg: Row) => (
+                    <tr key={pg.id}>
+                      <td>{pg.metodo_pagamento}</td>
+                      <td className="mono">{formatMoney(pg.valor)}</td>
+                      <td>{formatDate(pg.data_hora)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div className="total-row">
+              <span>Pago / Saldo</span>
+              <strong className="mono">
+                {formatMoney(detailPago)} <span className="muted">/</span> {formatMoney(detailSaldo)}
+              </strong>
+            </div>
+
+            {detail.status !== "Cancelado" && (
+              <div className="pay-form">
+                <select value={pgMetodo} onChange={(e) => setPgMetodo(e.target.value)}>
+                  {METODOS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={pgValor}
+                  placeholder="Valor"
+                  onChange={(e) => setPgValor(e.target.value === "" ? "" : Number(e.target.value))}
+                />
+                <button className="btn-primary" onClick={registrarPagamento} disabled={pgSaving}>
+                  {pgSaving ? "…" : "+ Registrar"}
+                </button>
+              </div>
+            )}
+          </div>
         </Modal>
       )}
     </div>
   );
+}
+
+const METODOS = ["PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"];
+
+// Soma dos pagamentos já registrados no pedido (usa o array do detalhe).
+function pago(pedido: Row): number {
+  return (pedido.pagamentos || []).reduce((s: number, pg: Row) => s + Number(pg.valor), 0);
+}
+
+// Saldo que ainda falta pagar (arredondado, nunca negativo).
+function restante(pedido: Row): number {
+  const r = Number(pedido.total) - pago(pedido);
+  return r > 0 ? Number(r.toFixed(2)) : 0;
+}
+
+// Situação de pagamento pra lista (usa o total_pago agregado vindo da API).
+function pagamentoSituacao(pedido: Row): { label: string; cls: string } {
+  const total = Number(pedido.total) || 0;
+  const totalPago = Number(pedido.total_pago) || 0;
+  if (total > 0 && totalPago >= total) return { label: "Pago", cls: "badge-on" };
+  if (totalPago > 0) return { label: "Parcial", cls: "badge-ocupada" };
+  return { label: "Em aberto", cls: "badge-off" };
 }
 
 function formatMoney(value: any): string {

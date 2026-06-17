@@ -793,3 +793,33 @@ tbody tr:hover {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ---------- Form de registrar pagamento (no detalhe do pedido) ---------- */
+.detail-empty {
+  margin: 0 0 4px;
+}
+
+.pay-form {
+  display: grid;
+  grid-template-columns: 1fr 130px auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.pay-form select,
+.pay-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.pay-form select:focus,
+.pay-form input:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}

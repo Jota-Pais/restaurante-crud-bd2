@@ -7,14 +7,18 @@ import { handleDbError } from "../errors";
 // A criação usa uma TRANSAÇÃO: ou grava o pedido e todos os itens, ou nada.
 const router = Router();
 
-// Lista pedidos já com os dados relacionados (mesa, garçom, cliente)
+// Lista pedidos já com os dados relacionados (mesa, garçom, cliente) e o
+// total já pago (SUM dos pagamentos daquele pedido) — relação pedido 1──< pagamentos.
 router.get("/", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(`
       SELECT p.*,
              m.numero        AS mesa_numero,
              f.nome          AS funcionario_nome,
-             c.nome          AS cliente_nome
+             c.nome          AS cliente_nome,
+             COALESCE((
+               SELECT SUM(pg.valor) FROM pagamentos pg WHERE pg.id_pedido = p.id
+             ), 0)            AS total_pago
       FROM pedidos p
       JOIN mesas m         ON m.id = p.id_mesa
       JOIN funcionarios f  ON f.id = p.id_funcionario
@@ -43,7 +47,12 @@ router.get("/:id", async (req: Request, res: Response) => {
        ORDER BY i.id`,
       [req.params.id]
     );
-    res.json({ ...pedido.rows[0], itens: itens.rows });
+    // Pagamentos do pedido (relação pedido 1──< pagamentos)
+    const pagamentos = await pool.query(
+      "SELECT * FROM pagamentos WHERE id_pedido = $1 ORDER BY id",
+      [req.params.id]
+    );
+    res.json({ ...pedido.rows[0], itens: itens.rows, pagamentos: pagamentos.rows });
   } catch (err) {
     handleDbError(err, res);
   }

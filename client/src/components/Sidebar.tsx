@@ -19,10 +19,10 @@ export function Sidebar({ groups, active, onSelect }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark">🍽️</span>
+        <span className="brand-mark">🍔</span>
         <div>
-          <strong>Restaurante</strong>
-          <span className="brand-sub">Gestão de Pedidos</span>
+          <strong>Lucas na Chapa</strong>
+          <span className="brand-sub">Lanchonete · Gestão de Pedidos</span>
         </div>
       </div>
 

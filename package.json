@@ -1,0 +1,15 @@
+{
+  "name": "restaurante-crud",
+  "version": "1.0.0",
+  "description": "CRUD do Sistema de Gestão de Restaurante - Banco de Dados II (Tema 4)",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently -n API,WEB -c yellow,cyan \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:api": "npm run dev --prefix server",
+    "dev:web": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

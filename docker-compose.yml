@@ -1,0 +1,58 @@
+# =====================================================================
+#  Sobe o projeto inteiro com um comando:  docker compose up
+#  - db  : PostgreSQL 17 já com as 8 tabelas + dados (schema.sql + seed.sql)
+#  - api : API REST (Node + Express + TS)            -> http://localhost:3001
+#  - web : interface (React + Vite + TS)             -> http://localhost:5173
+#
+#  Os scripts database/schema.sql e seed.sql são apenas MONTADOS no container
+#  do Postgres (continuam puros, só SQL). O Postgres os executa sozinho na
+#  primeira subida, em ordem (01-schema, 02-seed).
+# =====================================================================
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: restaurante
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Exposto na 5433 do host pra não conflitar com um PostgreSQL local na 5432.
+      # Quer inspecionar no pgAdmin? Conecte em localhost:5433 (user/senha: postgres).
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d restaurante"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: restaurante
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./client
+    environment:
+      # Faz o proxy do Vite (/api) apontar para o container da API.
+      VITE_API_PROXY: http://api:3001
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -18,46 +18,43 @@ As regras de integridade do banco (`CHECK`, `UNIQUE`, `NOT NULL`, `FOREIGN KEY`)
 
 ---
 
-## Como rodar (passo a passo)
+## Como rodar
 
-### 1. Pré-requisitos
-- **Node.js 18+** e **npm**
-- **PostgreSQL** rodando
+Há dois caminhos — **os dois deixam o sistema em http://localhost:5173.**
 
-### 2. Criar e popular o banco
-No `psql` ou no pgAdmin, crie um banco e rode os dois scripts da pasta `database/`:
+### ⚡ Caminho 1 — Docker (mais rápido, recomendado)
 
-```sql
-CREATE DATABASE restaurante;
--- conecte no banco "restaurante" e rode:
-\i database/schema.sql
-\i database/seed.sql
-```
+Só precisa ter o **Docker** instalado. Um comando sobe o banco (já com as 8 tabelas e os dados), a API e a interface:
 
-### 3. Configurar a conexão da API
 ```bash
-cd server
-cp .env.example .env
-# edite o .env com o usuário/senha do seu PostgreSQL
+git clone https://github.com/Jota-Pais/restaurante-crud-bd2
+cd restaurante-crud-bd2
+docker compose up
 ```
 
-### 4. Instalar dependências
-Na raiz do projeto:
+Abra **http://localhost:5173**. Só isso.
+
+- Parar: `Ctrl+C`.
+- Zerar o banco e recomeçar do zero: `docker compose down -v`.
+- O PostgreSQL do container fica em `localhost:5433` (usuário/senha `postgres`) — útil pra inspecionar no pgAdmin.
+
+### 🛠️ Caminho 2 — Local (pra quem já tem PostgreSQL + Node)
+
+Pré-requisitos: **Node.js 18+** e **PostgreSQL** rodando.
+
 ```bash
-npm install              # instala o "concurrently"
-npm run install:all      # instala server e client
+cp server/.env.example server/.env   # ajuste a senha do seu PostgreSQL no .env
+npm run setup                          # instala tudo + cria e popula o banco
+npm run dev                            # sobe API + interface
 ```
 
-### 5. Subir tudo (API + interface) com um comando só
-Na raiz:
-```bash
-npm run dev
-```
+Abra **http://localhost:5173**.
 
-- API: http://localhost:3001
-- Interface: **http://localhost:5173** ← abra esta no navegador
+- `npm run setup` = instala as dependências (server + client) **e** cria/popula o banco `restaurante`.
+- Só (re)criar o banco, sem reinstalar: `npm run db:setup` — é **idempotente** (pode rodar de novo sem dar erro de "já existe").
+- Rodar API e interface separados: `npm run dev:api` e `npm run dev:web`.
 
-> Se quiser rodar separado: `npm run dev:api` em um terminal e `npm run dev:web` em outro.
+> **Sobre os scripts SQL:** `database/schema.sql` e `database/seed.sql` são **SQL puro** (só os comandos), prontos pra anexar na entrega do portal. Tanto o `npm run db:setup` quanto o Docker apenas *leem* esses arquivos — a lógica de (re)criação fica fora deles.
 
 ---
 
@@ -65,10 +62,14 @@ npm run dev
 
 ```
 restaurante-crud/
+├── docker-compose.yml    # sobe banco + API + interface (Caminho 1)
 ├── database/
-│   ├── schema.sql        # criação das 8 tabelas
-│   └── seed.sql          # dados de exemplo
+│   ├── schema.sql        # criação das 8 tabelas (SQL puro)
+│   └── seed.sql          # dados de exemplo (SQL puro)
 ├── server/               # API REST (Node + Express + TS)
+│   ├── Dockerfile
+│   ├── scripts/
+│   │   └── setup-db.js   # cria + popula o banco (npm run db:setup)
 │   └── src/
 │       ├── index.ts      # monta as rotas
 │       ├── db.ts         # conexão com o PostgreSQL (pg)
@@ -76,6 +77,7 @@ restaurante-crud/
 │       ├── errors.ts     # traduz erros do banco em PT-BR
 │       └── routes/pedidos.ts  # pedido + itens (transação)
 └── client/               # interface (React + Vite + TS)
+    ├── Dockerfile
     └── src/
         ├── App.tsx
         ├── entities.ts            # config dos campos de cada tela
@@ -103,6 +105,3 @@ O CRUD foi feito pra conviver com a Parte 2 que o grupo está montando. Dois pon
 4. Ir em **Pedidos** → criar um pedido novo com 2 itens → mostrar o total calculado e a transação.
 5. Fechar o pedido e registrar um **Pagamento**.
 6. Tentar excluir uma categoria que tem produto → mostrar o bloqueio da chave estrangeira.
-```
-
-```

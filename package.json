@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "install:all": "cd server && npm install && cd ../client && npm install",
+    "db:setup": "npm run db:setup --prefix server",
+    "setup": "npm run install:all && npm run db:setup",
     "dev": "concurrently -n API,WEB -c yellow,cyan \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:api": "npm run dev --prefix server",
     "dev:web": "npm run dev --prefix client"

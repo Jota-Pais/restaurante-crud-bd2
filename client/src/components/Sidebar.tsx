@@ -19,11 +19,8 @@ export function Sidebar({ groups, active, onSelect }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark">🍔</span>
-        <div>
-          <strong>Lucas na Chapa</strong>
-          <span className="brand-sub">Lanchonete · Gestão de Pedidos</span>
-        </div>
+        <img className="brand-logo" src="/logo.png" alt="Lucas na Chapa" />
+        <span className="brand-sub">Lanchonete · Gestão de Pedidos</span>
       </div>
 
       <nav>

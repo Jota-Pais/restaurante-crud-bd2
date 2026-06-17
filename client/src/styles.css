@@ -1,21 +1,24 @@
 :root {
-  /* Paleta: espresso + off-white quente + laranja queimado (apetitoso, sem ser genérico) */
-  --ink: #211e1a;
-  --ink-soft: #3a352f;
-  --paper: #faf8f4;
+  /* Paleta da marca "Lucas na Chapa": vermelho + amarelo, com branco e quase-preto de apoio */
+  --ink: #2a1414;
+  --ink-soft: #4a2a2a;
+  --paper: #fdf6f1;
   --surface: #ffffff;
-  --border: #e8e2d8;
-  --muted: #8a8175;
-  --text: #2b2722;
-  --accent: #c2410c;
-  --accent-soft: #fbeae0;
+  --border: #efe2da;
+  --muted: #8a7e78;
+  --text: #2b2320;
+  --accent: #d62828;        /* VERMELHO — cor primária */
+  --accent-soft: #fde4e1;   /* tint claro p/ foco e realces */
+  --accent-strong: #a81d1d; /* vermelho escuro */
+  --yellow: #f6b40a;        /* AMARELO — cor secundária */
+  --yellow-soft: #fef1cf;
   --green: #15803d;
   --green-soft: #e3f3e8;
   --amber: #b45309;
   --amber-soft: #fdf0dc;
-  --red: #b91c1c;
+  --red: #b3201f;           /* vermelho p/ ações destrutivas / erros */
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(33, 30, 26, 0.04), 0 8px 24px rgba(33, 30, 26, 0.06);
+  --shadow: 0 1px 2px rgba(40, 20, 20, 0.05), 0 8px 24px rgba(40, 20, 20, 0.08);
 }
 
 * {
@@ -822,4 +825,67 @@ tbody tr:hover {
 .pay-form input:focus {
   outline: 2px solid var(--accent-soft);
   border-color: var(--accent);
+}
+
+/* ===================================================================
+   Tema "Lucas na Chapa" — barra lateral vermelha + logo + amarelo
+   =================================================================== */
+.sidebar {
+  background: linear-gradient(180deg, #c62a26 0%, #9e1b1b 100%);
+  color: #ffe9dc;
+}
+
+.brand {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 22px;
+}
+
+.brand-logo {
+  width: 108px;
+  height: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+
+.brand-sub {
+  color: #ffd9bf;
+  text-align: center;
+  font-size: 12px;
+}
+
+.nav-group-title {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.nav-item {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* Item ativo em AMARELO com texto escuro (combo da marca) */
+.nav-item.active,
+.nav-item.active:hover {
+  background: var(--yellow);
+  color: #5a1a0a;
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  color: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Toque de amarelo no conteúdo: sublinhado do título de cada tela */
+.page-header h1 {
+  display: inline-block;
+  border-bottom: 3px solid var(--yellow);
+  padding-bottom: 6px;
 }

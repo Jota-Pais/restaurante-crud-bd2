@@ -35,10 +35,11 @@ INSERT INTO mesas (numero, capacidade, status) VALUES
     (5, 2, 'Ocupada');
 
 INSERT INTO funcionarios (nome, cargo, salario) VALUES
-    ('Lucas Mendes', 'Chapeiro', 2600.00),
-    ('Bruna Rocha', 'Atendente', 1900.00),
-    ('Diego Fernandes', 'Garçom', 1850.00),
-    ('Carla Souza', 'Caixa', 2100.00);
+    ('Lucas Fernandes Rovaris', 'Chapeiro', 2600.00),
+    ('João Carlos Pais', 'Gerente', 4500.00),
+    ('Vitor Almeida', 'Caixa', 2100.00),
+    ('Juca Mazon', 'Garçom', 1900.00),
+    ('Gabriel Ugione', 'Atendente', 1900.00);
 
 INSERT INTO clientes (nome, telefone) VALUES
     ('Marcos Lima', '48999990001'),
@@ -48,8 +49,8 @@ INSERT INTO clientes (nome, telefone) VALUES
 -- Dois pedidos de exemplo (o total é recalculado a partir dos itens):
 --   #1 já fechado e pago   #2 ainda em aberto (bom pra demonstrar pagamentos)
 INSERT INTO pedidos (id_mesa, id_funcionario, id_cliente, status, total) VALUES
-    (2, 1, 1, 'Fechado', 0),
-    (5, 3, 2, 'Aberto', 0);
+    (2, 4, 1, 'Fechado', 0),
+    (5, 5, 2, 'Aberto', 0);
 
 INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, subtotal) VALUES
     (1, 6, 1, 36.00, 36.00),   -- Xis Tudo

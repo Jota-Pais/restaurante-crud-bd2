@@ -32,6 +32,7 @@ require("dotenv").config({ path: envPath });
 const databaseDir = path.join(__dirname, "..", "..", "database");
 const schemaSql = fs.readFileSync(path.join(databaseDir, "schema.sql"), "utf8");
 const seedSql = fs.readFileSync(path.join(databaseDir, "seed.sql"), "utf8");
+const parte2Sql = fs.readFileSync(path.join(databaseDir, "parte2.sql"), "utf8");
 
 const targetDb = process.env.PGDATABASE || "restaurante";
 
@@ -65,6 +66,11 @@ async function run() {
 
     console.log("• Rodando database/seed.sql (dados de exemplo)…");
     await db.query(seedSql);
+
+    // Parte 2 roda por ÚLTIMO, depois dos dados: assim as triggers passam a
+    // valer para as ações feitas na demonstração (e não recalculam o seed).
+    console.log("• Rodando database/parte2.sql (views, procedures/functions e triggers)…");
+    await db.query(parte2Sql);
   } finally {
     await db.end();
   }

@@ -95,10 +95,10 @@ router.post("/", async (req: Request, res: Response) => {
       );
     }
 
-    // Atualiza o total do pedido com a soma dos subtotais.
-    // OBS p/ integração com a Parte 2: se o grupo criar uma TRIGGER que já
-    // calcula o total automaticamente, remova esta linha para não somar 2x.
-    await client.query("UPDATE pedidos SET total = $1 WHERE id = $2", [total, pedido.id]);
+    // O total NÃO é atualizado aqui: a TRIGGER trg_atualizar_total (Parte 2)
+    // recalcula pedidos.total automaticamente a cada item inserido, a partir
+    // do SUM(subtotal). O banco é a fonte única do total. (O `total` somado
+    // acima é usado só para devolver na resposta sem precisar reconsultar.)
 
     await client.query("COMMIT");
     res.status(201).json({ ...pedido, total });

@@ -65,7 +65,8 @@ restaurante-crud/
 ├── docker-compose.yml    # sobe banco + API + interface (Caminho 1)
 ├── database/
 │   ├── schema.sql        # criação das 8 tabelas (SQL puro)
-│   └── seed.sql          # dados de exemplo (SQL puro)
+│   ├── seed.sql          # dados de exemplo (SQL puro)
+│   └── parte2.sql        # views, procedures/functions e triggers (SQL puro)
 ├── server/               # API REST (Node + Express + TS)
 │   ├── Dockerfile
 │   ├── scripts/
@@ -88,12 +89,18 @@ restaurante-crud/
 
 ---
 
-## Integração com a Parte 2 (Views / Procedures / Functions / Triggers)
+## Parte 2 (Views / Procedures / Functions / Triggers) — já integrada
 
-O CRUD foi feito pra conviver com a Parte 2 que o grupo está montando. Dois pontos de atenção:
+A Parte 2 do grupo está em **`database/parte2.sql`** e é instalada automaticamente pelo setup
+(roda depois de `schema.sql` e `seed.sql`, tanto no `npm run db:setup` quanto no Docker). Contém:
 
-- **Total do pedido:** hoje a API soma os subtotais e atualiza `pedidos.total`. Se o grupo criar uma **trigger** que já faz isso automaticamente, remova a linha indicada com um comentário em `server/src/routes/pedidos.ts` para não somar duas vezes.
-- **Views/Procedures:** se quiserem listar dados a partir de uma `VIEW` (ex.: relatório de vendas) ou inserir via `PROCEDURE`, dá pra trocar o `SELECT`/`INSERT` direto dentro das rotas correspondentes.
+- **3 views:** `vw_vendas`, `vw_produtos_mais_vendidos`, `vw_faturamento_funcionario`.
+- **3 procedures/functions:** `fechar_pedido(...)`, `faturamento_dia(...)`, `total_pedidos_cliente(...)`.
+- **3 triggers:** `trg_calcular_subtotal`, `trg_atualizar_total`, `trg_status_mesa`.
+
+Ponto de integração com a API: como a trigger **`trg_atualizar_total`** já recalcula `pedidos.total`
+a partir dos itens, a API **não** soma mais o total manualmente (a linha de `UPDATE pedidos SET total`
+em `server/src/routes/pedidos.ts` foi removida). O banco é a fonte única do total.
 
 ---
 

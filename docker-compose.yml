@@ -1,12 +1,13 @@
 # =====================================================================
 #  Sobe o projeto inteiro com um comando:  docker compose up
-#  - db  : PostgreSQL 17 já com as 8 tabelas + dados (schema.sql + seed.sql)
+#  - db  : PostgreSQL 17 já com as 8 tabelas + dados + Parte 2
+#          (schema.sql + seed.sql + parte2.sql)
 #  - api : API REST (Node + Express + TS)            -> http://localhost:3001
 #  - web : interface (React + Vite + TS)             -> http://localhost:5173
 #
-#  Os scripts database/schema.sql e seed.sql são apenas MONTADOS no container
-#  do Postgres (continuam puros, só SQL). O Postgres os executa sozinho na
-#  primeira subida, em ordem (01-schema, 02-seed).
+#  Os scripts database/*.sql são apenas MONTADOS no container do Postgres
+#  (continuam puros, só SQL). O Postgres os executa sozinho na primeira
+#  subida, em ordem (01-schema, 02-seed, 03-parte2).
 # =====================================================================
 services:
   db:
@@ -23,6 +24,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./database/parte2.sql:/docker-entrypoint-initdb.d/03-parte2.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d restaurante"]
       interval: 5s

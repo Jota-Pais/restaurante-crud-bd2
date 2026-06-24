@@ -5,13 +5,6 @@ CRUD completo sobre o banco PostgreSQL modelado pelo grupo (8 tabelas).
 
 **Stack:** Node + Express + TypeScript (API) · React + Vite + TypeScript (interface) · PostgreSQL.
 
-<!-- 📸 DEMONSTRAÇÃO — quando tiver prints/GIF da aplicação, crie a pasta docs/, salve as imagens lá e descomente:
-## 📸 Demonstração
-
-![Tela de Pedidos (master-detail)](docs/pedidos.png)
-![Validação de regra do banco](docs/validacao.png)
--->
-
 ---
 
 ## O que o sistema faz

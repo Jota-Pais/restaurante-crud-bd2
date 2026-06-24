@@ -5,6 +5,13 @@ CRUD completo sobre o banco PostgreSQL modelado pelo grupo (8 tabelas).
 
 **Stack:** Node + Express + TypeScript (API) · React + Vite + TypeScript (interface) · PostgreSQL.
 
+<!-- 📸 DEMONSTRAÇÃO — quando tiver prints/GIF da aplicação, crie a pasta docs/, salve as imagens lá e descomente:
+## 📸 Demonstração
+
+![Tela de Pedidos (master-detail)](docs/pedidos.png)
+![Validação de regra do banco](docs/validacao.png)
+-->
+
 ---
 
 ## O que o sistema faz
@@ -14,7 +21,7 @@ CRUD (Create, Read, Update, Delete) sobre as 8 tabelas do banco:
 - **Pedidos** — tela principal (master-detail): cria um pedido com vários itens em uma única transação, calcula o total, fecha e cancela pedidos.
 - **Produtos, Categorias, Mesas, Funcionários, Clientes, Pagamentos** — cadastro completo com listagem, criação, edição e exclusão.
 
-As regras de integridade do banco (`CHECK`, `UNIQUE`, `NOT NULL`, `FOREIGN KEY`) são traduzidas em mensagens claras na tela — atendendo às melhorias pedidas no slide 6 do trabalho (não gravar vazio, não aceitar preço/quantidade/salário ≤ 0, não criar pedido com cliente/produto inexistente, etc.).
+As regras de integridade do banco (`CHECK`, `UNIQUE`, `NOT NULL`, `FOREIGN KEY`) são traduzidas em mensagens claras na tela (não gravar vazio, não aceitar preço/quantidade/salário ≤ 0, não criar pedido com cliente/produto inexistente, etc.).
 
 ---
 
@@ -104,11 +111,6 @@ em `server/src/routes/pedidos.ts` foi removida). O banco é a fonte única do to
 
 ---
 
-## Roteiro sugerido para a apresentação (23/06)
+## 📄 Licença
 
-1. Mostrar o banco já criado (8 tabelas) no pgAdmin.
-2. Abrir a tela de **Produtos** → criar, editar e excluir um produto (CRUD completo).
-3. Mostrar a **validação**: tentar salvar um produto com preço 0 → aparece a mensagem do `CHECK`.
-4. Ir em **Pedidos** → criar um pedido novo com 2 itens → mostrar o total calculado e a transação.
-5. Fechar o pedido e registrar um **Pagamento**.
-6. Tentar excluir uma categoria que tem produto → mostrar o bloqueio da chave estrangeira.
+Distribuído sob a licença MIT. Veja [`LICENSE`](LICENSE) para mais detalhes.

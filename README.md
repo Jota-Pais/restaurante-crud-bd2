@@ -101,9 +101,3 @@ A Parte 2 do grupo está em **`database/parte2.sql`** e é instalada automaticam
 Ponto de integração com a API: como a trigger **`trg_atualizar_total`** já recalcula `pedidos.total`
 a partir dos itens, a API **não** soma mais o total manualmente (a linha de `UPDATE pedidos SET total`
 em `server/src/routes/pedidos.ts` foi removida). O banco é a fonte única do total.
-
----
-
-## 📄 Licença
-
-Distribuído sob a licença MIT. Veja [`LICENSE`](LICENSE) para mais detalhes.
